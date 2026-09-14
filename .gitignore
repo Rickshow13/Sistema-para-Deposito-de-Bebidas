@@ -2,3 +2,7 @@ deposito.db
 comprovantes/
 __pycache__/
 *.pyc
+# Ignorar arquivos do PyInstaller
+build/
+dist/
+*.spec
