@@ -1,8 +1,7 @@
 import customtkinter as ctk
-from tkinter import messagebox
+from tkinter import messagebox, ttk, filedialog
 from modules import relatorios
 from frames.estilo_tabela import criar_treeview
-
 
 class RelatoriosFrame(ctk.CTkFrame):
     def __init__(self, parent, app):
@@ -12,9 +11,10 @@ class RelatoriosFrame(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(3, weight=1)
 
-        ctk.CTkLabel(
-            self, text="Relatórios / Lucro", font=ctk.CTkFont(size=22, weight="bold")
-        ).grid(row=0, column=0, sticky="w", pady=(0, 15))
+        linha_topo = ctk.CTkFrame(self, fg_color="transparent")
+        linha_topo.grid(row=0, column=0, sticky="ew", pady=(0, 15))
+        ctk.CTkLabel(linha_topo, text="Relatórios / Lucro", font=ctk.CTkFont(size=22, weight="bold")).pack(side="left")
+        ctk.CTkButton(linha_topo, text="Exportar para Excel", command=self._exportar_excel).pack(side="right", padx=15)
 
         painel_filtro = ctk.CTkFrame(self)
         painel_filtro.grid(row=1, column=0, sticky="ew", pady=(0, 15))
@@ -27,9 +27,7 @@ class RelatoriosFrame(ctk.CTkFrame):
         self.campo_data_fim = ctk.CTkEntry(painel_filtro, width=120, placeholder_text="opcional")
         self.campo_data_fim.pack(side="left", padx=5)
 
-        ctk.CTkButton(painel_filtro, text="Calcular", command=self.atualizar).pack(
-            side="left", padx=15
-        )
+        ctk.CTkButton(painel_filtro, text="Calcular", command=self.atualizar).pack(side="left", padx=15)
 
         painel_cards = ctk.CTkFrame(self, fg_color="transparent")
         painel_cards.grid(row=2, column=0, sticky="ew", pady=(0, 15))
@@ -46,14 +44,19 @@ class RelatoriosFrame(ctk.CTkFrame):
         painel_ranking.grid_rowconfigure(1, weight=1)
         painel_ranking.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(
-            painel_ranking, text="Produtos mais vendidos no período",
-            font=ctk.CTkFont(weight="bold")
-        ).grid(row=0, column=0, sticky="w", padx=15, pady=(15, 5))
+        ctk.CTkLabel(painel_ranking, text="Produtos mais vendidos no período", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, sticky="w", padx=15, pady=(15, 5))
 
+        container_tabela = ctk.CTkFrame(painel_ranking, fg_color="transparent")
+        container_tabela.grid(row=1, column=0, sticky="nsew", padx=15, pady=(0, 15))
+        
         colunas = ("Produto", "Quantidade vendida", "Valor total")
-        self.tabela_ranking = criar_treeview(painel_ranking, colunas, (250, 160, 140))
-        self.tabela_ranking.grid(row=1, column=0, sticky="nsew", padx=15, pady=(0, 15))
+        self.tabela_ranking = criar_treeview(container_tabela, colunas, (250, 160, 140))
+        
+        scrollbar = ttk.Scrollbar(container_tabela, orient="vertical", command=self.tabela_ranking.yview)
+        self.tabela_ranking.configure(yscrollcommand=scrollbar.set)
+        
+        self.tabela_ranking.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
         self.atualizar()
 
@@ -86,3 +89,23 @@ class RelatoriosFrame(ctk.CTkFrame):
             self.tabela_ranking.insert("", "end", values=(
                 item["nome"], item["quantidade_total"], f"R$ {item['valor_total']:.2f}",
             ))
+
+    def _exportar_excel(self):
+        try:
+            import pandas as pd
+        except ImportError:
+            messagebox.showerror("Erro", "Por favor, instale o pacote pandas (pip install pandas openpyxl)")
+            return
+
+        linhas = []
+        for child in self.tabela_ranking.get_children():
+            linhas.append(self.tabela_ranking.item(child)["values"])
+
+        if not linhas:
+            return messagebox.showwarning("Aviso", "Não há dados para exportar.")
+
+        df = pd.DataFrame(linhas, columns=["Produto", "Quantidade vendida", "Valor total"])
+        caminho = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel", "*.xlsx")])
+        if caminho:
+            df.to_excel(caminho, index=False)
+            messagebox.showinfo("Sucesso", "Relatório exportado com sucesso!")

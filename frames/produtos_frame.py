@@ -3,7 +3,6 @@ from tkinter import messagebox
 from modules import produtos
 from frames.estilo_tabela import criar_treeview
 
-
 class ProdutosFrame(ctk.CTkFrame):
     def __init__(self, parent, app):
         super().__init__(parent, fg_color="transparent")
@@ -35,33 +34,46 @@ class ProdutosFrame(ctk.CTkFrame):
         self.tabela.bind("<<TreeviewSelect>>", self._ao_selecionar)
 
     def _montar_formulario(self):
-        painel = ctk.CTkFrame(self)
-        painel.grid(row=1, column=1, sticky="nsew")
+        # Painel principal da direita
+        painel_direito = ctk.CTkFrame(self)
+        painel_direito.grid(row=1, column=1, sticky="nsew")
 
-        ctk.CTkLabel(painel, text="Cadastro / Edição", font=ctk.CTkFont(weight="bold")).pack(
-            padx=15, pady=(15, 10), anchor="w"
-        )
+        # ==========================================
+        # 1. ÁREA DOS BOTÕES (Fixa na parte inferior)
+        # ==========================================
+        # Empacotamos no fundo (side="bottom") para que nunca sejam empurrados para fora do ecrã
+        frame_botoes = ctk.CTkFrame(painel_direito, fg_color="transparent")
+        frame_botoes.pack(side="bottom", fill="x", padx=15, pady=15)
 
-        self.campo_nome = self._campo(painel, "Nome do produto")
-        self.campo_categoria = self._campo(painel, "Categoria (ex: Cerveja)")
-        self.campo_unidade = self._campo(painel, "Unidade (ex: unidade, caixa)")
-        self.campo_custo = self._campo(painel, "Preço de custo (R$)")
-        self.campo_venda = self._campo(painel, "Preço de venda (R$)")
-        self.campo_minimo = self._campo(painel, "Estoque mínimo")
-        self.campo_inicial = self._campo(painel, "Estoque inicial (só na criação)")
-
-        botoes = ctk.CTkFrame(painel, fg_color="transparent")
-        botoes.pack(fill="x", padx=15, pady=15)
-
-        ctk.CTkButton(botoes, text="Salvar", command=self._salvar).pack(fill="x", pady=3)
+        ctk.CTkButton(frame_botoes, text="Salvar", command=self._salvar).pack(fill="x", pady=3)
         ctk.CTkButton(
-            botoes, text="Limpar", fg_color="gray40", hover_color="gray30",
+            frame_botoes, text="Limpar", fg_color="gray40", hover_color="gray30",
             command=self._limpar_formulario
         ).pack(fill="x", pady=3)
         ctk.CTkButton(
-            botoes, text="Desativar produto", fg_color="#8b2020", hover_color="#6b1818",
+            frame_botoes, text="Desativar produto", fg_color="#8b2020", hover_color="#6b1818",
             command=self._desativar
         ).pack(fill="x", pady=3)
+
+        # ==========================================
+        # 2. ÁREA DOS CAMPOS (Com barra de rolagem)
+        # ==========================================
+        # O "CTkScrollableFrame" e o "expand=True" garantem a barra de rolagem no espaço restante
+        frame_campos = ctk.CTkScrollableFrame(painel_direito, fg_color="transparent")
+        frame_campos.pack(side="top", fill="both", expand=True, padx=5, pady=5)
+
+        ctk.CTkLabel(frame_campos, text="Cadastro / Edição", font=ctk.CTkFont(weight="bold")).pack(
+            padx=15, pady=(15, 10), anchor="w"
+        )
+
+        # Associa os campos ao novo "frame_campos" com barra de rolagem
+        self.campo_nome = self._campo(frame_campos, "Nome do produto")
+        self.campo_categoria = self._campo(frame_campos, "Categoria (ex: Cerveja)")
+        self.campo_unidade = self._campo(frame_campos, "Unidade (ex: unidade, caixa)")
+        self.campo_custo = self._campo(frame_campos, "Preço de custo (R$)")
+        self.campo_venda = self._campo(frame_campos, "Preço de venda (R$)")
+        self.campo_minimo = self._campo(frame_campos, "Estoque mínimo")
+        self.campo_inicial = self._campo(frame_campos, "Estoque inicial (só na criação)")
 
     def _campo(self, parent, rotulo):
         ctk.CTkLabel(parent, text=rotulo, font=ctk.CTkFont(size=11)).pack(
